@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Клиент-серверное приложение v2.0</title>
+    <style>
+        .container { margin: 20px; }
+        .input-group { margin: 10px 0; }
+        button { margin: 5px; padding: 10px; }
+        #output { 
+            margin-top: 20px; 
+            padding: 10px; 
+            border: 1px solid #ccc; 
+            min-height: 100px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Версия 2.0 - Docker</h1>
+        
+        <!-- Форма отправки данных (версия 1.0) -->
+        <div class="input-group">
+            <h3>Отправить данные на сервер:</h3>
+            <input type="text" id="textInput" placeholder="Введите текст">
+            <button onclick="sendData()">Отправить</button>
+        </div>
+
+        <!-- Новая функциональность (версия 2.0) -->
+        <div class="input-group">
+            <h3>Получить данные с сервера:</h3>
+            <button onclick="getData()">Получить данные</button>
+        </div>
+
+        <!-- Область для вывода данных -->
+        <div id="output"></div>
+    </div>
+
+    <script>
+        // Используем относительные пути через nginx proxy
+        const BACKEND_URL = '/api';
+
+        // Функция отправки данных
+        async function sendData() {
+            const input = document.getElementById('textInput');
+            const text = input.value.trim();
+
+            if (!text) {
+                alert('Введите текст!');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${BACKEND_URL}/save`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ data: text })
+                });
+
+                if (response.ok) {
+                    alert('Данные успешно отправлены!');
+                    input.value = '';
+                } else {
+                    throw new Error('Ошибка сервера');
+                }
+            } catch (error) {
+                alert('Ошибка при отправке данных: ' + error.message);
+            }
+        }
+
+        // Новая функция для получения данных
+        async function getData() {
+            try {
+                const response = await fetch(`${BACKEND_URL}/data`);
+                const data = await response.json();
+                
+                const output = document.getElementById('output');
+                if (data.success) {
+                    output.textContent = data.content || 'Файл пуст';
+                } else {
+                    output.textContent = 'Ошибка: ' + data.error;
+                }
+            } catch (error) {
+                document.getElementById('output').textContent = 
+                    'Ошибка при получении данных: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>

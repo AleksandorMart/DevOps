@@ -1,0 +1,34 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: lab-backend
+    volumes:
+      - backend-data:/app/data
+    networks:
+      - app-network
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: lab-frontend
+    ports:
+      - "80:80"
+    networks:
+      - app-network
+    restart: unless-stopped
+    depends_on:
+      - backend
+
+volumes:
+  backend-data:
+    driver: local
+
+networks:
+  app-network:
+    driver: bridge
