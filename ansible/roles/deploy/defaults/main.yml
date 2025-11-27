@@ -1,0 +1,15 @@
+---
+# Установка Docker
+docker_install: true
+docker_users:
+  - ubuntu
+
+# Установка Docker Compose
+docker_compose_install: true
+
+# Клонирование репозиториев
+clone_repos: true
+
+# Управление сервисами
+start_services: false
+stop_services: false

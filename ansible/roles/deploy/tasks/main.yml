@@ -1,0 +1,113 @@
+---
+- name: Include OS-specific variables
+  include_vars: "{{ item }}"
+  with_first_found:
+    - files:
+        - "{{ ansible_distribution }}_{{ ansible_distribution_major_version }}.yml"
+        - "{{ ansible_distribution }}.yml"
+        - "{{ ansible_os_family }}.yml"
+        - "default.yml"
+      skip: true
+
+- name: Install prerequisites
+  apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gnupg
+      - lsb-release
+      - software-properties-common
+    state: present
+    update_cache: yes
+  when: docker_install
+  tags: [docker, install]
+
+- name: Add Docker GPG key
+  apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+  when: docker_install
+  tags: [docker, install]
+
+- name: Add Docker repository
+  apt_repository:
+    repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+    state: present
+  when: docker_install
+  tags: [docker, install]
+
+- name: Install Docker packages
+  apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+    state: present
+    update_cache: yes
+  when: docker_install
+  tags: [docker, install]
+
+- name: Ensure Docker service is running
+  systemd:
+    name: docker
+    state: started
+    enabled: yes
+  when: docker_install
+  tags: [docker, install]
+
+- name: Add users to docker group
+  user:
+    name: "{{ item }}"
+    groups: docker
+    append: yes
+  loop: "{{ docker_users }}"
+  when: docker_install
+  tags: [docker, install]
+
+- name: Install Docker Compose
+  get_url:
+    url: "https://github.com/docker/compose/releases/download/{{ docker_compose_version }}/docker-compose-{{ ansible_system }}-{{ ansible_architecture }}"
+    dest: /usr/local/bin/docker-compose
+    mode: '0755'
+  when: docker_compose_install
+  tags: [docker, install]
+
+- name: Create projects directory
+  file:
+    path: "{{ projects_dir }}"
+    state: directory
+    mode: '0755'
+  when: clone_repos
+  tags: [clone]
+
+- name: Clone DevOps repository
+  git:
+    repo: "{{ devops_repo }}"
+    dest: "{{ devops_dir }}"
+    version: "{{ devops_version }}"
+    force: yes
+  when: clone_repos
+  tags: [clone]
+
+- name: Copy docker-compose.yml to projects directory
+  copy:
+    src: "{{ devops_dir }}/docker-compose.yml"
+    dest: "{{ projects_dir }}/docker-compose.yml"
+    remote_src: yes
+  when: start_services
+  tags: [start]
+
+- name: Start microservices with Docker Compose
+  community.docker.docker_compose:
+    project_src: "{{ projects_dir }}"
+    state: present
+  when: start_services
+  tags: [start]
+
+- name: Stop microservices with Docker Compose
+  community.docker.docker_compose:
+    project_src: "{{ projects_dir }}"
+    state: stopped
+  when: stop_services
+  tags: [stop]

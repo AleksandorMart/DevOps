@@ -1,0 +1,13 @@
+---
+# Настройки репозиториев
+devops_repo: "https://github.com/AleksandorMart/DevOps.git"
+
+# Ветки репозиториев
+devops_version: "main"
+
+# Пути на целевой ноде
+projects_dir: "/opt/microservices"
+devops_dir: "{{ projects_dir }}/devops"
+
+# Настройки Docker
+docker_compose_version: "v2.24.0"

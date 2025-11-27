@@ -1,0 +1,36 @@
+---
+- name: Deploy microservices infrastructure
+  hosts: webservers
+  vars:
+    docker_install: true
+    docker_compose_install: true
+    clone_repos: true
+    start_services: false
+    stop_services: false
+  roles:
+    - deploy
+  tags: [infrastructure]
+
+- name: Start microservices
+  hosts: webservers
+  vars:
+    docker_install: false
+    docker_compose_install: false
+    clone_repos: false
+    start_services: true
+    stop_services: false
+  roles:
+    - deploy
+  tags: [start]
+
+- name: Stop microservices
+  hosts: webservers
+  vars:
+    docker_install: false
+    docker_compose_install: false
+    clone_repos: false
+    start_services: false
+    stop_services: true
+  roles:
+    - deploy
+  tags: [stop]
