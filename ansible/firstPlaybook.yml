@@ -1,0 +1,5 @@
+name: Deploy project
+hosts: prod
+become: yes
+roles:
+  - deploy

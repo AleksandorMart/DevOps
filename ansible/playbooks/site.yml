@@ -1,6 +1,6 @@
 ---
 - name: Deploy microservices infrastructure
-  hosts: webservers
+  hosts: prod
   vars:
     docker_install: true
     docker_compose_install: true
@@ -12,7 +12,7 @@
   tags: [infrastructure]
 
 - name: Start microservices
-  hosts: webservers
+  hosts: prod
   vars:
     docker_install: false
     docker_compose_install: false
@@ -24,7 +24,7 @@
   tags: [start]
 
 - name: Stop microservices
-  hosts: webservers
+  hosts: prod
   vars:
     docker_install: false
     docker_compose_install: false
