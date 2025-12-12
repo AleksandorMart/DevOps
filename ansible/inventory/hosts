@@ -1,2 +1,5 @@
-[prod]
+[webservers]
+localhost ansible_connection=local ansible_user=jenkins
+
+[local]
 localhost ansible_connection=local

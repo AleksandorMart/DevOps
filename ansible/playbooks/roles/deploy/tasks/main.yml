@@ -1,15 +1,12 @@
 ---
-- name: Include OS-specific variables
-  include_vars: "{{ item }}"
-  with_first_found:
-    - files:
-        - "{{ ansible_distribution }}_{{ ansible_distribution_major_version }}.yml"
-        - "{{ ansible_distribution }}.yml"
-        - "{{ ansible_os_family }}.yml"
-        - "default.yml"
-      skip: true
+- name: Update package cache
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+  become: yes
+  tags: [docker, install]
 
-- name: Install prerequisites
+- name: Install prerequisites for Docker
   apt:
     name:
       - apt-transport-https
@@ -19,22 +16,21 @@
       - lsb-release
       - software-properties-common
     state: present
-    update_cache: yes
-  when: docker_install
+  become: yes
   tags: [docker, install]
 
 - name: Add Docker GPG key
   apt_key:
     url: https://download.docker.com/linux/ubuntu/gpg
     state: present
-  when: docker_install
+  become: yes
   tags: [docker, install]
 
 - name: Add Docker repository
   apt_repository:
     repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
     state: present
-  when: docker_install
+  become: yes
   tags: [docker, install]
 
 - name: Install Docker packages
@@ -45,7 +41,7 @@
       - containerd.io
     state: present
     update_cache: yes
-  when: docker_install
+  become: yes
   tags: [docker, install]
 
 - name: Ensure Docker service is running
@@ -53,24 +49,22 @@
     name: docker
     state: started
     enabled: yes
-  when: docker_install
+  become: yes
   tags: [docker, install]
 
-- name: Add users to docker group
+- name: Add Jenkins user to docker group
   user:
-    name: "{{ item }}"
+    name: "jenkins"
     groups: docker
     append: yes
-  loop: "{{ docker_users }}"
-  when: docker_install
+  become: yes
   tags: [docker, install]
 
-- name: Install Docker Compose
-  get_url:
-    url: "https://github.com/docker/compose/releases/download/{{ docker_compose_version }}/docker-compose-{{ ansible_system }}-{{ ansible_architecture }}"
-    dest: /usr/local/bin/docker-compose
-    mode: '0755'
-  when: docker_compose_install
+- name: Install Docker Compose using pip
+  pip:
+    name: docker-compose
+    state: present
+  become: yes
   tags: [docker, install]
 
 - name: Create projects directory
@@ -78,25 +72,27 @@
     path: "{{ projects_dir }}"
     state: directory
     mode: '0755'
-  when: clone_repos
+    owner: jenkins
+    group: jenkins
   tags: [clone]
 
-- name: Clone DevOps repository
-  git:
-    repo: "{{ devops_repo }}"
-    dest: "{{ devops_dir }}"
-    version: "{{ devops_version }}"
-    force: yes
-  when: clone_repos
-  tags: [clone]
-
-- name: Copy docker-compose.yml to projects directory
+- name: Copy frontend files
   copy:
-    src: "{{ devops_dir }}/docker-compose.yml"
+    src: "../../../frontend/"
+    dest: "{{ frontend_dir }}"
+  tags: [clone]
+
+- name: Copy backend files
+  copy:
+    src: "../../../backend/"
+    dest: "{{ backend_dir }}"
+  tags: [clone]
+
+- name: Copy docker-compose.yml
+  copy:
+    src: "../../../docker-compose.yml"
     dest: "{{ projects_dir }}/docker-compose.yml"
-    remote_src: yes
-  when: start_services
-  tags: [start]
+  tags: [clone]
 
 - name: Start microservices with Docker Compose
   community.docker.docker_compose:

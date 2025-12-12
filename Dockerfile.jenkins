@@ -1,0 +1,28 @@
+FROM jenkins/jenkins:lts-jdk17
+
+USER root
+
+# Устанавливаем необходимые пакеты
+RUN apt-get update && apt-get install -y \
+    sudo \
+    git \
+    python3 \
+    python3-pip \
+    ansible \
+    docker.io \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Устанавливаем Docker Compose (бинарный файл)
+RUN curl -SL https://github.com/docker/compose/releases/download/v2.24.0/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose \
+    && chmod +x /usr/local/bin/docker-compose
+
+# Настраиваем sudo без пароля для jenkins
+RUN echo "jenkins ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+
+# Возвращаемся к пользователю jenkins
+USER jenkins
+
+# Устанавливаем плагины Jenkins
+COPY --chown=jenkins:jenkins plugins.txt /usr/share/jenkins/ref/plugins.txt
+RUN jenkins-plugin-cli --plugin-file /usr/share/jenkins/ref/plugins.txt

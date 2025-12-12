@@ -1,0 +1,5 @@
+ansible
+git
+workflow-aggregator
+docker-workflow
+ssh-agent
